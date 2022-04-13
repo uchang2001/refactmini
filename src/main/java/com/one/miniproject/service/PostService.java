@@ -66,25 +66,31 @@ public class PostService {
     }
 
     public ResponseDto writepost(postDto postDto, MultipartFile[] multipartFile)throws IOException{
-        Post post=new Post();
-        post.setContent(postDto.getContent());
-        post.setStar(postDto.getStar());
-        post.setTitle(postDto.getTitle());
-        Optional<User> user1=userRepository.findUserByUsername(postDto.getUsername());
-        User user=user1.get();
-        post.setUser(user);
-        int leng= multipartFile.length;
-        long imagepid=postRepository.save(post).getPostid();
-        for(int i=0;i<leng;i++) {
-            Image image=new Image();
-            image.setImageSrc(s3Uploader.upload(multipartFile[i], "static"));
-            image.setPostid(imagepid);
-            imageRepository.save(image);
-        }
-        post.setPostid(imagepid);
         ResponseDto responseDto=new ResponseDto();
         responseDto.setResult(true);
         responseDto.setErr_msg("");
+        try {
+            Post post = new Post();
+            post.setContent(postDto.getContent());
+            post.setStar(postDto.getStar());
+            post.setTitle(postDto.getTitle());
+            Optional<User> user1 = userRepository.findUserByUsername(postDto.getUsername());
+            User user = user1.get();
+            post.setUser(user);
+            int leng = multipartFile.length;
+            long imagepid = postRepository.save(post).getPostid();
+            for (int i = 0; i < leng; i++) {
+                Image image = new Image();
+                image.setImageSrc(s3Uploader.upload(multipartFile[i], "static"));
+                image.setPostid(imagepid);
+                imageRepository.save(image);
+            }
+            post.setPostid(imagepid);
+        }
+        catch(Exception e){
+            responseDto.setErr_msg("에러가 발생했습니다.");
+            responseDto.setResult(false);
+        }
         return responseDto;
     }
 
@@ -114,12 +120,18 @@ public class PostService {
     @Transactional
     public ResponseDto deletepost(long pid){
         ResponseDto responseDto=new ResponseDto();
-        commentRepository.deleteAllByPost_Postid(pid);
-        imageRepository.deleteAllByPostid(pid);
-        goodRepository.deleteAllByPostid(pid);
-        postRepository.deleteById(pid);
         responseDto.setErr_msg("");
         responseDto.setResult(true);
+        try {
+            commentRepository.deleteAllByPost_Postid(pid);
+            imageRepository.deleteAllByPostid(pid);
+            goodRepository.deleteAllByPostid(pid);
+            postRepository.deleteById(pid);
+        }
+        catch(Exception e){
+            responseDto.setResult(false);
+            responseDto.setErr_msg("에러가 발생했습니다.");
+        }
         return responseDto;
     }
 
